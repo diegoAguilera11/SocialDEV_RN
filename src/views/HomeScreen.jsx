@@ -11,7 +11,6 @@ export const HomeScreen = () => {
             <TouchableOpacity
                 onPress={logOut}
             >
-
                 <Text>Cerrar Sesion</Text>
             </TouchableOpacity>
         </View>

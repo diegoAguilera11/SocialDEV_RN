@@ -1,6 +1,7 @@
-import React, { createContext, useReducer } from 'react';
+import React, { createContext, useReducer, useEffect } from 'react';
 import { authReducer } from './authReducer';
 import userApi from '../api/userApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 // Estado inicial del contexto
@@ -19,6 +20,45 @@ export const AuthProvider = ({ children }) => {
 
     const [state, dispatch] = useReducer(authReducer, authInitialState);
 
+
+    useEffect(()=> {
+        checkToken();
+    }, []);
+
+    const checkToken = async () => {
+        const token = await AsyncStorage.getItem('token');
+        console.log(token);
+
+        // Si no hay token
+        if(!token){
+            dispatch({type: 'notAuthenticated'})
+        }
+
+        // Si hay token
+        try {
+            const response = await userApi.get('/token/validate',{
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            if(response.status !== 200) {
+                return dispatch({type:'notAuthenticated'});
+            }
+
+            dispatch({
+                type: 'signIn',
+                payload: {
+                    token: response.data.token,
+                    user: response.data.user,
+                },
+            });
+
+        } catch (error) {
+            console.log('error en check token');
+        }
+    }
+
     const signUp = async ({ name, email, password }) => {
         try {
             const { data } = await userApi.post('/register', { name, email, password });
@@ -31,6 +71,9 @@ export const AuthProvider = ({ children }) => {
                 }
             });
 
+            // Almacenar el token del usuario.
+            await AsyncStorage.setItem('token', response.data.token);
+
         } catch (error) {
             console.log(error.response.data.errors)
             dispatch({
@@ -42,13 +85,17 @@ export const AuthProvider = ({ children }) => {
     const signIn = async ({ email, password }) => {
         try {
             const response = await userApi.post('/login', { email, password });
-                dispatch({
-                    type: 'signIn',
-                    payload: {
-                        token: response.data.token,
-                        user: response.data.user
-                    }
-                })
+            dispatch({
+                type: 'signIn',
+                payload: {
+                    token: response.data.token,
+                    user: response.data.user
+                }
+            });
+
+            // Almacenar el token del usuario.
+            await AsyncStorage.setItem('token', response.data.token);
+
 
         } catch (error) {
             console.log(error.response.data)
@@ -58,10 +105,13 @@ export const AuthProvider = ({ children }) => {
             })
         }
     }
-    const logOut = () => {
+    const logOut = async () => {
+
+        await AsyncStorage.removeItem('token');
+
         dispatch({
             type: 'logOut',
-        })
+        });
     }
 
     const removeError = () => {

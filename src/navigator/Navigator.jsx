@@ -4,11 +4,19 @@ import LoginScreen from '../views/LoginScreen';
 import RegisterScreen from '../views/RegisterScreen';
 import { HomeScreen } from '../views/HomeScreen';
 import { AuthContext } from '../context/AuthContext';
+import LoadingScreen from '../views/LoadingScreen';
+import { BottomNavigator } from './bottomTab/BottomNavigator';
 
 const Stack = createStackNavigator();
 
 export const Navigator = () => {
     const { status } = useContext(AuthContext);
+
+
+    if(status === 'checking') {
+        return <LoadingScreen/>
+    }
+
     return (
         <Stack.Navigator
             screenOptions={{
@@ -26,7 +34,7 @@ export const Navigator = () => {
                         </>
                     )
                     : (
-                        <Stack.Screen name='Home' component={HomeScreen} />
+                        <Stack.Screen name='BottomTab' component={BottomNavigator} />
                     )
             }
 
