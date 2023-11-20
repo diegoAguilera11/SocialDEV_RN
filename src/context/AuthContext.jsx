@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
     const [state, dispatch] = useReducer(authReducer, authInitialState);
 
 
-    useEffect(()=> {
+    useEffect(() => {
         checkToken();
     }, []);
 
@@ -30,20 +30,20 @@ export const AuthProvider = ({ children }) => {
         console.log(token);
 
         // Si no hay token
-        if(!token){
-            dispatch({type: 'notAuthenticated'})
+        if (!token) {
+            dispatch({ type: 'notAuthenticated' })
         }
 
         // Si hay token
         try {
-            const response = await userApi.get('/token/validate',{
+            const response = await userApi.get('/token/validate', {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
 
-            if(response.status !== 200) {
-                return dispatch({type:'notAuthenticated'});
+            if (response.status !== 200) {
+                return dispatch({ type: 'notAuthenticated' });
             }
 
             dispatch({
@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }) => {
             });
 
         } catch (error) {
-            console.log('error en check token');
+            console.log('error en check token', error);
         }
     }
 
