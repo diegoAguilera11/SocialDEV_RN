@@ -1,4 +1,4 @@
-import React, { createContext, useReducer, useEffect } from 'react';
+import React, { createContext, useReducer, useEffect, useState } from 'react';
 import { authReducer } from './authReducer';
 import userApi from '../api/userApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -19,15 +19,20 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
 
     const [state, dispatch] = useReducer(authReducer, authInitialState);
+    const [posts, setPosts] = useState([]);
 
 
     useEffect(() => {
         checkToken();
     }, []);
 
+    useEffect(() => {
+        getPosts();
+    }, []);
+
     const checkToken = async () => {
         const token = await AsyncStorage.getItem('token');
-        console.log(token);
+        // console.log(token);
 
         // Si no hay token
         if (!token) {
@@ -42,10 +47,6 @@ export const AuthProvider = ({ children }) => {
                 }
             });
 
-            if (response.status !== 200) {
-                return dispatch({ type: 'notAuthenticated' });
-            }
-
             dispatch({
                 type: 'signIn',
                 payload: {
@@ -55,7 +56,9 @@ export const AuthProvider = ({ children }) => {
             });
 
         } catch (error) {
-            console.log('error en check token', error);
+            if(error.response.status === 401){
+                dispatch({ type: 'notAuthenticated' });
+            }
         }
     }
 
@@ -75,7 +78,7 @@ export const AuthProvider = ({ children }) => {
             await AsyncStorage.setItem('token', response.data.token);
 
         } catch (error) {
-            console.log(error.response.data.errors)
+            // console.log(error.response.data.errors)
             dispatch({
                 type: 'addError',
                 payload: error.response.data.errors
@@ -98,7 +101,7 @@ export const AuthProvider = ({ children }) => {
 
 
         } catch (error) {
-            console.log(error.response.data)
+            // console.log(error.response.data)
             dispatch({
                 type: 'addError',
                 payload: error.response.data.errors
@@ -117,6 +120,22 @@ export const AuthProvider = ({ children }) => {
     const removeError = () => {
         dispatch({ type: 'removeError' })
     }
+
+    // Funcion que obtiene los posts
+    const getPosts = async () => {
+        const token = await AsyncStorage.getItem('token');
+        try {
+            const { data } = await userApi.get('/posts', {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            });
+
+            setPosts(data);
+        } catch (error) {
+            // console.log(error.response.data);
+        }
+    }
     return (
         <AuthContext.Provider
             value={{
@@ -124,7 +143,9 @@ export const AuthProvider = ({ children }) => {
                 signIn,
                 signUp,
                 logOut,
-                removeError
+                removeError,
+                getPosts,
+                posts
             }}
         >
             {children}
